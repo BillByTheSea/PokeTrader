@@ -6,7 +6,7 @@ To run, simply call `python poketrader.py <save_data_1> <save_data_2>`. You will
 
 ## Will this work with Pokemon Yellow?
 
-Probably? From my understanding of [the save data format](https://bulbapedia.bulbagarden.net/wiki/Save_data_structure_(Generation_I\)) it *should* be fine? I don't understand where Pikachu's happiness is stored though, and that worries me.
+Probably? From my understanding of [the save data format](https://bulbapedia.bulbagarden.net/wiki/Save_data_structure_(Generation_I)) it *should* be fine? I don't understand where Pikachu's happiness is stored though, and that worries me.
 
 ## Will this work with GSC/RBE/Digimon/Zelda?
 
