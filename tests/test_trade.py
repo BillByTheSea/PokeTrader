@@ -54,7 +54,27 @@ class TestPartyData(unittest.TestCase):
         self.assertEqual(self.party_data.num_pokemon, 2)
         self.assertEqual(self.party_data.pokemon(0).species, "Caterpie")
         self.assertEqual(self.party_data.pokemon(1).species, "Charmander")
+        self.assertEqual(self.party_data.ot_name_ascii(0), "Charlie")
+        self.assertEqual(self.party_data.ot_name_ascii(1), "Bill")
 
         self.assertEqual(party_data_two.num_pokemon, 2)
         self.assertEqual(party_data_two.pokemon(0).species, "Squirtle")
         self.assertEqual(party_data_two.pokemon(1).species, "Bulbasaur")
+        self.assertEqual(party_data_two.ot_name_ascii(0), "Charlie")
+        self.assertEqual(party_data_two.ot_name_ascii(1), "Bill")
+    
+    def test_trade_evolution(self):
+        self.append_pokemon(self.party_data, "Graveler", 15)
+
+        party_data_two = poketrader.PartyData(bytearray(32 * 1024))
+        party_data_two.player_name = "Charlie"
+        self.append_pokemon(party_data_two, "Machoke", 20)
+
+        poketrader.trade_pokemon(0, 0, self.party_data, party_data_two)
+
+        self.assertEqual(self.party_data.pokemon(0).species, "Machamp")
+        for pokemon_name in ("Graveler", "Golem", "Machoke", "Machamp"):
+            self.assertTrue(poketrader.check_pokedex(self.party_data.data, pokemon.species_id_for(pokemon_name)))
+            self.assertTrue(poketrader.check_pokedex(party_data_two.data, pokemon.species_id_for(pokemon_name)))
+        
+
