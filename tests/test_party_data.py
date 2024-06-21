@@ -1,6 +1,6 @@
 import unittest
 
-from src import pokemon, save_data
+from src import pokemon, save_data, text
 
 
 class TestPartyData(unittest.TestCase):
@@ -88,3 +88,9 @@ class TestPartyData(unittest.TestCase):
                     party_data_two.data, pokemon.species_id_for(pokemon_name)
                 )
             )
+
+    def test_has_nickname(self):
+        self.append_pokemon(self.party_data, "Bulbasaur", 5)
+        self.assertEqual(self.party_data.has_nickname(0), False)
+        self.party_data.set_nickname(0, text.ascii_string_to_pokii_string("name", 4))
+        self.assertEqual(self.party_data.has_nickname(0), True)
