@@ -29,16 +29,16 @@ class Pokemon:
         self.memory[0x21] = value
 
     @property
-    def index(self):
+    def species_id(self):
         return self.memory[0x00]
 
-    @index.setter
-    def index(self, value):
+    @species_id.setter
+    def species_id(self, value):
         self.memory[0x00] = value
 
     @property
     def species(self):
-        return pokemon_to_string(self.index)
+        return pokemon_to_string(self.species_id)
 
 
 class PartyData:
@@ -62,7 +62,7 @@ class PartyData:
             raise IndexError("Party is full")
 
         index = self.num_pokemon
-        nickname = text.ascii_string_to_pokii_string(pokemon_to_string(pokemon.index).upper(), length=self._nickname_size)
+        nickname = text.ascii_string_to_pokii_string(pokemon_to_string(pokemon.species_id).upper(), length=self._nickname_size)
         self.insert_at(index, pokemon, self.player_name, nickname)
         self.data[self._party_data_offset] += 1
         
@@ -99,7 +99,7 @@ class PartyData:
             
     def insert_at(self, index, pokemon, ot_name, nickname):
         species_id_offset = self._party_data_offset + 0x01 + (index * 0x01)
-        self.data[species_id_offset] = pokemon.index
+        self.data[species_id_offset] = pokemon.species_id
         pokemon_offset = self._pokemon_offset + (index * self._pokemon_size)
         self.data[pokemon_offset:pokemon_offset + self._pokemon_size] = pokemon.memory[:]
         ot_name_offset = self._ot_name_offset + (index * self._ot_name_size)
@@ -107,7 +107,7 @@ class PartyData:
         nickname_offset = self._nickname_offset + (index * self._nickname_size)
         self.data[nickname_offset:nickname_offset + self._nickname_size] = nickname[:]
 
-        set_pokedex(self.data, pokemon.index)
+        set_pokedex(self.data, pokemon.species_id)
 
 
 def check_pokedex(data, pokemon_index):
@@ -117,8 +117,8 @@ def check_pokedex(data, pokemon_index):
     return ((pokedex_data[pokemon_index >> 3] >> (pokemon_index & 7)) & 1) != 0
 
 
-def set_pokedex(data, pokemon_index):
-    pokemon_index = POKEMON_IN_THE_ACTUAL_GODDAMN_CORRECT_ORDER.index(POKEMON_BY_INDEX[pokemon_index])
+def set_pokedex(data, species_id):
+    pokemon_index = POKEMON_IN_THE_ACTUAL_GODDAMN_CORRECT_ORDER.index(POKEMON_BY_INDEX[species_id])
     def set_pokedex_impl(pokedex_data):
         index = pokemon_index >> 3
         bit_position = pokemon_index & 7
@@ -142,34 +142,34 @@ def trade_pokemon(pokemon_one_index, pokemon_two_index, party_one, party_two):
     pokemon_one = party_one.pokemon(pokemon_one_index)
     pokemon_two = party_two.pokemon(pokemon_two_index)
 
-    party_one_pokemon_to_set = [stupid_index_to_correct_index(pokemon_two.index)]
-    party_two_pokemon_to_set = [stupid_index_to_correct_index(pokemon_one.index)]
+    party_one_pokemon_to_set = [stupid_index_to_correct_index(pokemon_two.species_id)]
+    party_two_pokemon_to_set = [stupid_index_to_correct_index(pokemon_one.species_id)]
 
-    ot_name_one = party_one.ot_name(pokemon_one.index)[:]
-    ot_name_two = party_two.ot_name(pokemon_two.index)[:]
+    ot_name_one = party_one.ot_name(pokemon_one_index)[:]
+    ot_name_two = party_two.ot_name(pokemon_two_index)[:]
 
-    if pokemon_one.index in TRADE_EVOLUTIONS:
-        evolved_index = TRADE_EVOLUTIONS[pokemon_one.index]
+    if pokemon_one.species_id in TRADE_EVOLUTIONS:
+        evolved_index = TRADE_EVOLUTIONS[pokemon_one.species_id]
         evolved_name = POKEMON_BY_INDEX.index(evolved_index).upper()
         evolved_name_encoded = [0x50] * 0xB
         for i, char in enumerate(evolved_name):
             evolved_name_encoded[i] = text.ascii_to_pokii(char)
-        if party_one.nickname_ascii(pokemon_one.index) == pokemon_one.species.upper():
+        if party_one.nickname_ascii(pokemon_one.species_id) == pokemon_one.species.upper():
             party_one.insert_at(pokemon_one_index, pokemon_one, ot_name_one, evolved_name_encoded)
-        pokemon_one.index = evolved_index
-        party_two_pokemon_to_set.append(stupid_index_to_correct_index(pokemon_one.index))
-        print(f"Evolved {party_one.ot_name(pokemon_one.index)}'s {pokemon_to_string(pokemon_one.index)} into {pokemon_to_string(pokemon_one.index)}")
+        pokemon_one.species_id = TRADE_EVOLUTIONS[pokemon_one.species_id]
+        party_two_pokemon_to_set.append(stupid_index_to_correct_index(pokemon_one.species_id))
+        print(f"Evolved {party_one.ot_name(pokemon_one_index)}'s {pokemon_to_string(pokemon_one.species_id)} into {pokemon_to_string(pokemon_one.species_id)}")
 
-    if pokemon_two.index in TRADE_EVOLUTIONS:
-        evolved_index = TRADE_EVOLUTIONS[pokemon_two.index]
+    if pokemon_two.species_id in TRADE_EVOLUTIONS:
+        evolved_index = TRADE_EVOLUTIONS[pokemon_two.species_id]
         evolved_name = POKEMON_BY_INDEX.index(evolved_index).upper()
         evolved_name_encoded = [0x50] * 0xB
         for i, char in enumerate(evolved_name):
             evolved_name_encoded[i] = text.ascii_to_pokii(char)
-        if party_two.nickname_ascii(pokemon_two.index) == pokemon_two.species.upper():
+        if party_two.nickname_ascii(pokemon_two.species_id) == pokemon_two.species.upper():
             party_two.insert_at(pokemon_two_index, pokemon_two, ot_name_two, evolved_name_encoded)
-        pokemon_two.index = TRADE_EVOLUTIONS[pokemon_two.index]
-        party_one_pokemon_to_set.append(stupid_index_to_correct_index(pokemon_two.index))
+        pokemon_two.species_id = TRADE_EVOLUTIONS[pokemon_two.species_id]
+        party_one_pokemon_to_set.append(stupid_index_to_correct_index(pokemon_two.species_id))
         print(f"Evolved {party_two.ot_name(pokemon_two_index)}'s {pokemon_to_string(pokemon_two_index)} into {pokemon_to_string(pokemon_two_index)}")
 
 
@@ -179,8 +179,8 @@ def trade_pokemon(pokemon_one_index, pokemon_two_index, party_one, party_two):
     party_one.insert_at(pokemon_one_index, pokemon_two, ot_name_two, nickname_two)
     party_two.insert_at(pokemon_two_index, pokemon_one, ot_name_one, nickname_one)
     
-    set_pokedex(party_one.data, pokemon_two.index)
-    set_pokedex(party_two.data, pokemon_one.index)
+    set_pokedex(party_one.data, pokemon_two.species_id)
+    set_pokedex(party_two.data, pokemon_one.species_id)
     return party_one.data, party_two.data
 
 
