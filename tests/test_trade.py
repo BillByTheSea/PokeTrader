@@ -14,7 +14,7 @@ class TestPartyData(unittest.TestCase):
     
     def test_append_pokemon_to_party(self):
         a_pokemon = poketrader.Pokemon(bytearray(self.pokemon_size))
-        a_pokemon.index = pokemon.species_id_for("Bulbasaur")
+        a_pokemon.species_id = pokemon.species_id_for("Bulbasaur")
         a_pokemon.level = 5
         self.party_data.append_pokemon_to_party(a_pokemon)
         self.assertEqual(self.party_data.num_pokemon, 1)
@@ -22,12 +22,12 @@ class TestPartyData(unittest.TestCase):
         self.assertEqual(self.party_data.pokemon(0).level, 5)
         self.assertEqual(self.party_data.nickname_ascii(0), "BULBASAUR")
         self.assertEqual(self.party_data.ot_name_ascii(0), "Bill")
-        self.assertTrue(poketrader.check_pokedex(self.party_data.data, a_pokemon.index))
+        self.assertTrue(poketrader.check_pokedex(self.party_data.data, a_pokemon.species_id))
 
     def test_append_to_full_party(self):
         for i in range(6):
             a_pokemon = poketrader.Pokemon(bytearray(self.pokemon_size))
-            a_pokemon.index = 5
+            a_pokemon.species_id = 5
             a_pokemon.level = (i + 1) * 2
             self.party_data.append_pokemon_to_party(a_pokemon)
         self.assertEqual(self.party_data.num_pokemon, 6)
@@ -36,7 +36,7 @@ class TestPartyData(unittest.TestCase):
 
     def append_pokemon(self, party_data, species, level):
         a_pokemon = poketrader.Pokemon(bytearray(self.pokemon_size))
-        a_pokemon.index = pokemon.species_id_for(species)
+        a_pokemon.species_id = pokemon.species_id_for(species)
         a_pokemon.level = level
         party_data.append_pokemon_to_party(a_pokemon)
 
