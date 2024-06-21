@@ -2,7 +2,7 @@
 
 The Poketrader is a simple Python script that allows you trade Pokemon between save data of Gen 1 Pokemon games.
 
-To run, simply call `python poketrader.py <save_data_1> <save_data_2>`. You will then be prompted through the rest of the process.
+To run, simply call `python main.py <save_data_1> <save_data_2>`. You will then be prompted through the rest of the process.
 
 ## Will this work with Pokemon Yellow?
 
