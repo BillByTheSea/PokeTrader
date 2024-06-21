@@ -345,3 +345,18 @@ POKEMON_IN_THE_ACTUAL_GODDAMN_CORRECT_ORDER = [
 "Mewtwo",
 "Mew",
 ]
+
+
+def species_id_for(pokemon):
+    return POKEMON_BY_INDEX.index(pokemon) 
+
+
+TRADE_EVOLUTIONS = {
+    species_id_for("Machoke"): species_id_for("Machamp"),
+    species_id_for("Graveler"): species_id_for("Golem"),
+    species_id_for("Haunter"): species_id_for("Gengar"),
+    species_id_for("Kadabra"): species_id_for("Alakazam")
+}
+
+def stupid_index_to_correct_index(index):
+    return POKEMON_IN_THE_ACTUAL_GODDAMN_CORRECT_ORDER.index(POKEMON_BY_INDEX[index])

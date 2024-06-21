@@ -1,24 +1,20 @@
 import argparse
-from pokemon import POKEMON_BY_INDEX, POKEMON_IN_THE_ACTUAL_GODDAMN_CORRECT_ORDER
+from src import text
+from src.pokemon import POKEMON_BY_INDEX, POKEMON_IN_THE_ACTUAL_GODDAMN_CORRECT_ORDER, TRADE_EVOLUTIONS, stupid_index_to_correct_index
 
 
-def species_id_for(pokemon):
-    return POKEMON_BY_INDEX.index(pokemon) 
-
-TRADE_EVOLUTIONS = {
-    species_id_for("Machoke"): species_id_for("Machamp"),
-    species_id_for("Graveler"): species_id_for("Golem"),
-    species_id_for("Haunter"): species_id_for("Gengar"),
-    species_id_for("Kadabra"): species_id_for("Alakazam")
-}
-
-def pokemon_to_string(pokemon):
-    pokemon = POKEMON_BY_INDEX[pokemon]
+def pokemon_to_string(species_id: int) -> str:
+    pokemon = POKEMON_BY_INDEX[species_id]
     return "MissingNo." if "MissingNo." in pokemon else pokemon
 
 def party_to_string(party):
     # Print each pokemon on a new line, and number them.
-    return "\n".join(f"{index + 1}. {pokemon.species} (Level {pokemon.level})" for index, pokemon in enumerate(party))
+    result = ""
+    for index in range(party.num_pokemon):
+        pokemon = party.pokemon(index)
+        nickname = party.nickname_ascii(index)
+        result += f"{index + 1}. {pokemon.species} ({nickname}) - Level {pokemon.level}\n"
+    return result
 
 class Pokemon:
     def __init__(self, memory):
@@ -27,6 +23,10 @@ class Pokemon:
     @property
     def level(self):
         return self.memory[0x21]
+
+    @level.setter
+    def level(self, value):
+        self.memory[0x21] = value
 
     @property
     def index(self):
@@ -48,13 +48,24 @@ class PartyData:
         self._pokemon_size = 0x2C
         self._ot_name_size = 0xB
         self._nickname_size = 0xB
+        self._player_name_offset = 0x2598
         self._pokemon_offset = self._party_data_offset + 0x8
         self._ot_name_offset = self._party_data_offset + 0x110
         self._nickname_offset = self._party_data_offset + 0x152
+        self._player_name_size = 0xB
 
     def __str__(self):
-        return party_to_string([self.pokemon(index) for index in range(self.num_pokemon)])
+        return party_to_string(self)
 
+    def append_pokemon_to_party(self, pokemon: Pokemon):
+        if self.num_pokemon >= 6:
+            raise IndexError("Party is full")
+
+        index = self.num_pokemon
+        nickname = text.ascii_string_to_pokii_string(pokemon_to_string(pokemon.index).upper(), length=self._nickname_size)
+        self.insert_at(index, pokemon, self.player_name, nickname)
+        self.data[self._party_data_offset] += 1
+        
     @property
     def num_pokemon(self):
         return self.data[self._party_data_offset]
@@ -63,14 +74,29 @@ class PartyData:
         offset = self._pokemon_offset + (index * self._pokemon_size)
         return Pokemon(self.data[offset:offset + self._pokemon_size])
     
+    @property
+    def player_name(self):
+        return self.data[self._player_name_offset:self._player_name_offset + self._player_name_size]
+
+    @player_name.setter
+    def player_name(self, player_name_ascii):
+        player_name_encoded = text.ascii_string_to_pokii_string(player_name_ascii, length=self._player_name_size)
+        self.data[self._player_name_offset:self._player_name_offset + self._player_name_size] = player_name_encoded
+
     def ot_name(self, index):
         offset = self._ot_name_offset + (index * self._ot_name_size)
         return self.data[offset:offset + self._ot_name_size]
+    
+    def ot_name_ascii(self, index):
+        return text.pokii_string_to_ascii_string(self.ot_name(index), length=self._ot_name_size)
 
     def nickname(self, index):
         offset = self._nickname_offset + (index * self._nickname_size)
         return self.data[offset:offset + self._nickname_size]
     
+    def nickname_ascii(self, index):
+        return text.pokii_string_to_ascii_string(self.nickname(index), length=self._nickname_size)
+            
     def insert_at(self, index, pokemon, ot_name, nickname):
         species_id_offset = self._party_data_offset + 0x01 + (index * 0x01)
         self.data[species_id_offset] = pokemon.index
@@ -81,11 +107,14 @@ class PartyData:
         nickname_offset = self._nickname_offset + (index * self._nickname_size)
         self.data[nickname_offset:nickname_offset + self._nickname_size] = nickname[:]
 
+        set_pokedex(self.data, pokemon.index)
+
 
 def check_pokedex(data, pokemon_index):
+    pokemon_index = POKEMON_IN_THE_ACTUAL_GODDAMN_CORRECT_ORDER.index(POKEMON_BY_INDEX[pokemon_index])
     owned_address = 0x25A3
     pokedex_data = data[owned_address:]
-    return (pokedex_data[pokemon_index >> 3] >> (pokemon_index & 7)) & 1
+    return ((pokedex_data[pokemon_index >> 3] >> (pokemon_index & 7)) & 1) != 0
 
 
 def set_pokedex(data, pokemon_index):
@@ -109,27 +138,41 @@ def set_pokedex(data, pokemon_index):
     data[seen_address:seen_address + pokedex_size] = pokedex_data
 
 
-def stupid_index_to_correct_index(index):
-    return POKEMON_IN_THE_ACTUAL_GODDAMN_CORRECT_ORDER.index(POKEMON_BY_INDEX[index])
-
 def trade_pokemon(pokemon_one_index, pokemon_two_index, party_one, party_two):
     pokemon_one = party_one.pokemon(pokemon_one_index)
     pokemon_two = party_two.pokemon(pokemon_two_index)
 
-    party_one_pokemon_to_set = [stupid_index_to_correct_index(pokemon_two_index)]
-    party_two_pokemon_to_set = [stupid_index_to_correct_index(pokemon_one_index)]
+    party_one_pokemon_to_set = [stupid_index_to_correct_index(pokemon_two.index)]
+    party_two_pokemon_to_set = [stupid_index_to_correct_index(pokemon_one.index)]
+
+    ot_name_one = party_one.ot_name(pokemon_one.index)[:]
+    ot_name_two = party_two.ot_name(pokemon_two.index)[:]
 
     if pokemon_one.index in TRADE_EVOLUTIONS:
-        pokemon_one.index = TRADE_EVOLUTIONS[pokemon_one.index]
+        evolved_index = TRADE_EVOLUTIONS[pokemon_one.index]
+        evolved_name = POKEMON_BY_INDEX.index(evolved_index).upper()
+        evolved_name_encoded = [0x50] * 0xB
+        for i, char in enumerate(evolved_name):
+            evolved_name_encoded[i] = text.ascii_to_pokii(char)
+        if party_one.nickname_ascii(pokemon_one.index) == pokemon_one.species.upper():
+            party_one.insert_at(pokemon_one_index, pokemon_one, ot_name_one, evolved_name_encoded)
+        pokemon_one.index = evolved_index
         party_two_pokemon_to_set.append(stupid_index_to_correct_index(pokemon_one.index))
-        print(f"Evolved {party_one.ot_name(pokemon_one_index)}'s {pokemon_to_string(pokemon_one_index)} into {pokemon_to_string(pokemon_one_index)}")
+        print(f"Evolved {party_one.ot_name(pokemon_one.index)}'s {pokemon_to_string(pokemon_one.index)} into {pokemon_to_string(pokemon_one.index)}")
+
     if pokemon_two.index in TRADE_EVOLUTIONS:
+        evolved_index = TRADE_EVOLUTIONS[pokemon_two.index]
+        evolved_name = POKEMON_BY_INDEX.index(evolved_index).upper()
+        evolved_name_encoded = [0x50] * 0xB
+        for i, char in enumerate(evolved_name):
+            evolved_name_encoded[i] = text.ascii_to_pokii(char)
+        if party_two.nickname_ascii(pokemon_two.index) == pokemon_two.species.upper():
+            party_two.insert_at(pokemon_two_index, pokemon_two, ot_name_two, evolved_name_encoded)
         pokemon_two.index = TRADE_EVOLUTIONS[pokemon_two.index]
         party_one_pokemon_to_set.append(stupid_index_to_correct_index(pokemon_two.index))
         print(f"Evolved {party_two.ot_name(pokemon_two_index)}'s {pokemon_to_string(pokemon_two_index)} into {pokemon_to_string(pokemon_two_index)}")
 
-    ot_name_one = party_one.ot_name(pokemon_one_index)[:]
-    ot_name_two = party_two.ot_name(pokemon_two_index)[:]
+
     nickname_one = party_one.nickname(pokemon_one_index)[:]
     nickname_two = party_two.nickname(pokemon_two_index)[:]
 
