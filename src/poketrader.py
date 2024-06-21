@@ -121,9 +121,9 @@ class PartyData:
         species_id_offset = self._party_data_offset + 0x01 + (index * 0x01)
         self.data[species_id_offset] = pokemon.species_id
         pokemon_offset = self._pokemon_offset + (index * self._pokemon_size)
-        self.data[pokemon_offset : pokemon_offset + self._pokemon_size] = (
-            pokemon.memory[:]
-        )
+        self.data[
+            pokemon_offset : pokemon_offset + self._pokemon_size
+        ] = pokemon.memory[:]
         ot_name_offset = self._ot_name_offset + (index * self._ot_name_size)
         self.data[ot_name_offset : ot_name_offset + self._ot_name_size] = ot_name[:]
         nickname_offset = self._nickname_offset + (index * self._nickname_size)

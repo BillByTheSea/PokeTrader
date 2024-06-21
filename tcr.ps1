@@ -1,4 +1,5 @@
 # Run Python unittest
+pipenv run black .
 python -m unittest
 
 # Check the exit code of the last command
