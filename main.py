@@ -1,5 +1,5 @@
 import argparse
-from src.poketrader import PartyData, Pokemon, checksum, trade_pokemon
+from src.party_data import PartyData, Pokemon, checksum, trade_pokemon
 
 
 def validate_args(save_file_one, save_file_two):
