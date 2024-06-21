@@ -192,11 +192,11 @@ def evolve_pokemon(party_index, source_party, destination_party, the_pokemon):
     evolved_index = TRADE_EVOLUTIONS[the_pokemon.species_id]
     evolved_name = POKEMON_BY_INDEX[evolved_index].upper()
     evolved_name_encoded = text.ascii_string_to_pokii_string(evolved_name, 0xB)
+    print(
+        f"Evolved {source_party.ot_name_ascii(party_index)}'s {source_party.nickname_ascii(party_index)} into {pokemon_to_string(evolved_index)}"
+    )
     if not source_party.has_nickname(party_index):
         source_party.set_nickname(party_index, evolved_name_encoded)
-    print(
-        f"Evolved {source_party.ot_name_ascii(party_index)}'s {pokemon_to_string(the_pokemon.species_id)} into {pokemon_to_string(evolved_index)}"
-    )
     the_pokemon.species_id = evolved_index
     set_pokedex(destination_party.data, the_pokemon.species_id)
     set_pokedex(source_party.data, the_pokemon.species_id)

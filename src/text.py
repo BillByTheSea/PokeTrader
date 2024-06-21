@@ -20,12 +20,12 @@ def ascii_to_pokii(char):
 
 
 def ascii_string_to_pokii_string(ascii_string, length):
+    if len(ascii_string) >= length:
+        raise ValueError(
+            f"ascii_string is {len(ascii_string)} long, but length is {length}"
+        )
     result = bytearray([0x50] * length)
     for index, char in enumerate(ascii_string):
-        if index >= length:
-            raise ValueError(
-                f"ascii_string is {len(ascii_string)} long, but length is {length}"
-            )
         result[index] = ascii_to_pokii(char)
     return result
 

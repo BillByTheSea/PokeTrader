@@ -9,3 +9,9 @@ class TestText(unittest.TestCase):
     def test_round_trip(self):
         for char in self.pokii_chars:
             self.assertEqual(char, text.pokii_to_ascii(text.ascii_to_pokii(char)))
+
+    def test_length_too_small(self):
+        with self.assertRaises(ValueError):
+            text.ascii_string_to_pokii_string(
+                "abc", length=3
+            )  # Need room for null terminator
