@@ -15,3 +15,7 @@ class TestText(unittest.TestCase):
             text.ascii_string_to_pokii_string(
                 "abc", length=3
             )  # Need room for null terminator
+
+    def test_ascii_to_pokii_includes_terminator(self):
+        pokii_string = text.ascii_string_to_pokii_string("abc", length=5)
+        self.assertEqual(pokii_string[3], 0x50)
